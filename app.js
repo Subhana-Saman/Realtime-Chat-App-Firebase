@@ -1,0 +1,204 @@
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword , signInWithEmailAndPassword , onAuthStateChanged , GoogleAuthProvider , signInWithPopup , signOut} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
+ import {getDatabase , ref, push, onChildAdded , update, remove ,onChildChanged , onChildRemoved }  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js"
+ 
+ 
+ const firebaseConfig = {
+    apiKey: "AIzaSyCE00Iq-vCIz19uuD_CsB5S9TeJs9MKLgM",
+    authDomain: "real-time-database-8ca56.firebaseapp.com",
+    databaseURL: "https://real-time-database-8ca56-default-rtdb.firebaseio.com",
+    projectId: "real-time-database-8ca56",
+    storageBucket: "real-time-database-8ca56.appspot.com",
+    messagingSenderId: "395187705387",
+    appId: "1:395187705387:web:c47ff0c77a3b963d6afc6e",
+    measurementId: "G-48E6KVHVV4"
+  };
+
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app)
+  const provider =  new GoogleAuthProvider();
+  const db = getDatabase(app)
+
+  // Sign Up code
+  document.getElementById('signup')?.addEventListener('click',()=>{
+    const email = document.getElementById('email').value ;
+    const password = document.getElementById('password').value ;
+
+    createUserWithEmailAndPassword(auth , email ,password)
+    .then(()=>{
+        alert('SignUp Successfully')
+        window.location.href = 'user.html'
+    })
+    .catch((error)=>{
+     alert(error.message)
+    })
+  })
+
+  // login code
+
+   document.getElementById('login')?.addEventListener('click',()=>{
+    const email = document.getElementById('email').value ;
+    const password = document.getElementById('password').value ;
+
+    signInWithEmailAndPassword(auth , email ,password)
+    .then(()=>{
+        alert('Login Successfully')
+        window.location.href = 'user.html'
+    })
+    .catch((error)=>{
+     alert(error.message)
+    })
+  })
+
+  // logout
+document.getElementById('logout')?.addEventListener('click',()=>{
+    signOut(auth)
+    .then(()=>{
+        alert('Logout Successfully')
+        window.location.href = 'index.html'
+    })
+     .catch((error)=>{
+     alert(error.message)
+    })
+})
+// Continue with Google
+document.getElementById('google-btn')?.addEventListener('click', ()=>{
+  signInWithPopup(auth, provider)
+  .then(()=>{
+    alert('Login Successfully')
+    window.location.href ='user.html'
+  })
+  .catch((error)=>{
+    alert(error.message)
+  })
+})
+
+document.getElementById('user-btn')?.addEventListener('click', () => {
+  const username = document.getElementById('username').value.trim();
+
+  if (username === "") {
+    alert("Please enter a username");
+    return;
+  }
+
+  localStorage.setItem("chatUser", username); // ✅ Save username
+  window.location.href = "chat.html"; // ✅ Move to chat page
+});
+
+
+
+// chat app page code
+window.sendMessage =  function () {
+  const username = localStorage.getItem("chatUser"); // ✅ Get saved username
+  const message = document.getElementById('message').value.trim();
+
+  if (!username) {
+    alert("Username missing! Go back and enter username.");
+    window.location.href = "user.html";
+    return;
+  }
+
+  if (message === "") return;
+
+  push(ref(db, "messages"), {
+    name: username,
+    text: message
+  });
+
+  document.getElementById('message').value = "";
+};
+
+
+// helper to create a message element
+function createMessageElement(id, data) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'message-item';
+  wrapper.dataset.id = id;
+
+   const currentUser = localStorage.getItem("chatUser");
+  if (data.name === currentUser) {
+    wrapper.classList.add('own');
+  }
+
+  const textP = document.createElement('p');
+  textP.className = 'message-text';
+  textP.textContent = `${data.name} : ${data.text}`;
+
+  // Edit button
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'edit-btn';
+  editBtn.textContent = '✏️';
+  editBtn.addEventListener('click', () => {
+    editMsg(id, data.text);
+  });
+
+  // Delete button
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'delete-btn';
+  delBtn.textContent = '🗑️';
+  delBtn.addEventListener('click', () => {
+    // optional confirm
+    if (confirm('Delete this message?')) deleteMsg(id);
+  });
+
+  wrapper.appendChild(textP);
+  wrapper.appendChild(editBtn);
+  wrapper.appendChild(delBtn);
+
+  return wrapper;
+}
+
+// on new message
+onChildAdded(ref(db, "messages"), function(snapshot) {
+  const data = snapshot.val();
+  const id = snapshot.key;
+  const msgBox = document.getElementById('messages');
+
+  const msgEl = createMessageElement(id, data);
+  msgBox.appendChild(msgEl);
+  msgBox.scrollTop = msgBox.scrollHeight;
+});
+
+// when a message is edited -> update the element
+onChildChanged(ref(db, "messages"), function(snapshot) {
+  const data = snapshot.val();
+  const id = snapshot.key;
+  const msgBox = document.getElementById('messages');
+  const existing = msgBox.querySelector(`.message-item[data-id="${id}"]`);
+  if (existing) {
+    const textP = existing.querySelector('.message-text');
+    textP.textContent = `${data.name} : ${data.text}`;
+  }
+});
+
+// when a message is removed -> remove the element
+onChildRemoved(ref(db, "messages"), function(snapshot) {
+  const id = snapshot.key;
+  const msgBox = document.getElementById('messages');
+  const existing = msgBox.querySelector(`.message-item[data-id="${id}"]`);
+  if (existing) existing.remove();
+});
+
+function deleteMsg(id) {
+  remove(ref(db, "messages/" + id))
+    .catch(err => alert('Delete error: ' + err.message));
+}
+
+function editMsg(id, oldText) {
+  const newText = prompt('Edit message', oldText);
+  if (newText == null) return; // user cancelled
+  const trimmed = newText.trim();
+  if (trimmed === '') {
+    alert('Message cannot be empty.');
+    return;
+  }
+  update(ref(db, "messages/" + id), { text: trimmed })
+    .catch(err => alert('Update error: ' + err.message));
+}
+
+
