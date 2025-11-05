@@ -103,6 +103,11 @@ window.sendMessage =  function () {
 
   if (message === "") return;
 
+  if (message.length > 500) {  // NEW: Limit message length to 500 characters
+    alert('Message too long! Max 500 characters.');
+    return;
+  }
+
   push(ref(db, "messages"), {
     name: username,
     text: message
@@ -112,43 +117,53 @@ window.sendMessage =  function () {
 };
 
 
-// helper to create a message element
 function createMessageElement(id, data) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'message-item';
+  const wrapper = document.createElement("div");
+  wrapper.className = "message-item";
   wrapper.dataset.id = id;
 
-   const currentUser = localStorage.getItem("chatUser");
+  const currentUser = localStorage.getItem("chatUser");
+
   if (data.name === currentUser) {
-    wrapper.classList.add('own');
+    wrapper.classList.add("own");
   }
 
-  const textP = document.createElement('p');
-  textP.className = 'message-text';
-  textP.textContent = `${data.name} : ${data.text}`;
-
-  // Edit button
-  const editBtn = document.createElement('button');
-  editBtn.type = 'button';
-  editBtn.className = 'edit-btn';
-  editBtn.textContent = '✏️';
-  editBtn.addEventListener('click', () => {
-    editMsg(id, data.text);
-  });
-
-  // Delete button
-  const delBtn = document.createElement('button');
-  delBtn.type = 'button';
-  delBtn.className = 'delete-btn';
-  delBtn.textContent = '🗑️';
-  delBtn.addEventListener('click', () => {
-    // optional confirm
-    if (confirm('Delete this message?')) deleteMsg(id);
-  });
-
+  // Message Text
+  const textP = document.createElement("p");
+  textP.className = "message-text";
+  textP.textContent = `${data.text}`;
   wrapper.appendChild(textP);
-  wrapper.appendChild(editBtn);
-  wrapper.appendChild(delBtn);
+
+  // USERNAME small label
+  const userLabel = document.createElement("span");
+userLabel.className = "user-label";
+userLabel.textContent = data.name;
+wrapper.insertBefore(userLabel, textP); // ✅ Username uper
+
+
+  // ✅ Only your own messages should have action buttons
+  if (data.name === currentUser) {
+    const actionRow = document.createElement("div");
+    actionRow.className = "message-actions";
+
+    // Edit Button
+    const editBtn = document.createElement("button");
+    editBtn.innerHTML = "  ✏️";
+    editBtn.className = "edit-btn";
+    editBtn.onclick = () => editMsg(id, data.text);
+
+    // Delete Button
+    const delBtn = document.createElement("button");
+    delBtn.innerHTML = "  🗑️";
+    delBtn.className = "delete-btn";
+    delBtn.onclick = () => {
+      if (confirm("Delete this message?")) deleteMsg(id);
+    };
+
+    actionRow.appendChild(editBtn);
+    actionRow.appendChild(delBtn);
+    wrapper.appendChild(actionRow);
+  }
 
   return wrapper;
 }
@@ -197,8 +212,7 @@ function editMsg(id, oldText) {
     alert('Message cannot be empty.');
     return;
   }
+  if (!confirm('Confirm edit?')) return;  // NEW: Add confirmation to prevent accidental edits
   update(ref(db, "messages/" + id), { text: trimmed })
     .catch(err => alert('Update error: ' + err.message));
 }
-
-
