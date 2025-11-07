@@ -29,12 +29,15 @@
 
     createUserWithEmailAndPassword(auth , email ,password)
     .then(()=>{
-        alert('SignUp Successfully')
-        window.location.href = 'user.html'
+         swal("Login Successfully","welcome","success");
+       setTimeout(()=>{
+        window.location.href = "user.html";
+        }, 1500)
     })
-    .catch((error)=>{
-     alert(error.message)
-    })
+  .catch((error)=>{
+  swal("Login Failed", error.message, "error");
+})
+
   })
 
   // login code
@@ -45,20 +48,28 @@
 
     signInWithEmailAndPassword(auth , email ,password)
     .then(()=>{
-        alert('Login Successfully')
-        window.location.href = 'user.html'
+
+       swal("Login Successfully","welcome","success");
+       setTimeout(()=>{
+        window.location.href = "user.html";
+        }, 1500);
+       
     })
     .catch((error)=>{
-     alert(error.message)
-    })
+  window.swal("Login Failed", error.message, "error");
+})
+
   })
 
   // logout
-document.getElementById('logout')?.addEventListener('click',()=>{
+  document.getElementById('logout')?.addEventListener('click',()=>{
     signOut(auth)
     .then(()=>{
-        alert('Logout Successfully')
-        window.location.href = 'index.html'
+
+        swal('Logout Successfully','Welcome','success')
+       setTimeout(()=>{
+        window.location.href = "index.html";
+        }, 1200);
     })
      .catch((error)=>{
      alert(error.message)
@@ -68,21 +79,25 @@ document.getElementById('logout')?.addEventListener('click',()=>{
 document.getElementById('google-btn')?.addEventListener('click', ()=>{
   signInWithPopup(auth, provider)
   .then(()=>{
-    alert('Login Successfully')
-    window.location.href ='user.html'
+    swal('Login Successfully','welcome','success')
+    setTimeout(()=>{
+        window.location.href = "user.html";
+        }, 1500);
   })
   .catch((error)=>{
-    alert(error.message)
-  })
+  window.swal("Login Failed", error.message, "error");
+})
+
 })
 
 document.getElementById('user-btn')?.addEventListener('click', () => {
   const username = document.getElementById('username').value.trim();
 
-  if (username === "") {
-    alert("Please enter a username");
+if (username === "") {
+    window.swal("Missing Field", "Please enter a username", "warning");
     return;
-  }
+}
+
 
   localStorage.setItem("chatUser", username); // ✅ Save username
   window.location.href = "chat.html"; // ✅ Move to chat page
@@ -187,7 +202,7 @@ onChildChanged(ref(db, "messages"), function(snapshot) {
   const existing = msgBox.querySelector(`.message-item[data-id="${id}"]`);
   if (existing) {
     const textP = existing.querySelector('.message-text');
-    textP.textContent = `${data.name} : ${data.text}`;
+    textP.textContent = `${data.name}`;
   }
 });
 
@@ -200,19 +215,65 @@ onChildRemoved(ref(db, "messages"), function(snapshot) {
 });
 
 function deleteMsg(id) {
-  remove(ref(db, "messages/" + id))
-    .catch(err => alert('Delete error: ' + err.message));
+  window.swal({
+    title: "Are you sure?",
+    text: "This message will be permanently deleted!",
+    icon: "warning",
+    buttons: true,
+    dangerMode: true,
+  })
+  .then((willDelete) => {
+    if (willDelete) {
+      remove(ref(db, "messages/" + id))
+        .then(() => {
+          window.swal("Deleted!", "Message removed successfully.", "success");
+        })
+        .catch(err => {
+          window.swal("Delete Error", err.message, "error");
+        });
+    }
+  });
 }
 
+
 function editMsg(id, oldText) {
-  const newText = prompt('Edit message', oldText);
-  if (newText == null) return; // user cancelled
-  const trimmed = newText.trim();
-  if (trimmed === '') {
-    alert('Message cannot be empty.');
-    return;
-  }
-  if (!confirm('Confirm edit?')) return;  // NEW: Add confirmation to prevent accidental edits
-  update(ref(db, "messages/" + id), { text: trimmed })
-    .catch(err => alert('Update error: ' + err.message));
+  swal({
+    title: "Edit Message",
+    text: "Update your message:",
+    content: {
+      element: "input",
+      attributes: {
+        value: oldText,
+      },
+    },
+    buttons: ["Cancel", "Save"],
+  })
+  .then((newText) => {
+    if (newText === null) return; // user clicked Cancel
+
+    const trimmed = newText.trim();
+    if (trimmed === "") {
+      swal("Empty Message", "Message cannot be empty.", "warning");
+      return;
+    }
+
+    // Confirmation before saving
+    swal({
+      title: "Confirm Edit?",
+      text: "Do you want to save changes?",
+      icon: "info",
+      buttons: ["No", "Yes"],
+    }).then((confirmEdit) => {
+      if (!confirmEdit) return;
+
+      update(ref(db, "messages/" + id), { text: trimmed })
+        .then(() => {
+          swal("Updated!", "Message updated successfully.", "success");
+        })
+        .catch(err => {
+          swal("Update Error", err.message, "error");
+        });
+    });
+  });
 }
+
