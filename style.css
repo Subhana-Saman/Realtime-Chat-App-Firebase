@@ -7,7 +7,7 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: radial-gradient(circle at 20% 50%, #ff956b 0%, #6c3bc7 25%, #c158e0 50%, #30805a 75%, #FECA57 100%);
+  background: radial-gradient(circle at 20% 50%, #e69575 0%, #9360f0 25%, #b359ce 50%, #357c5b 75%, #FECA57 100%);
   background-attachment: fixed;
   background-size: 400% 400%;
   color: #080808;
