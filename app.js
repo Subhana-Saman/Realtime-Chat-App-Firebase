@@ -1,5 +1,6 @@
+
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword , signInWithEmailAndPassword , onAuthStateChanged , GoogleAuthProvider , signInWithPopup , signOut} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+  import { getAuth, createUserWithEmailAndPassword , signInWithEmailAndPassword , onAuthStateChanged ,  sendPasswordResetEmail, GoogleAuthProvider , signInWithPopup , signOut} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
  import {getDatabase , ref, push, onChildAdded , update, remove ,onChildChanged , onChildRemoved }  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js"
  
@@ -29,13 +30,25 @@
 
     createUserWithEmailAndPassword(auth , email ,password)
     .then(()=>{
-         swal("Login Successfully","welcome","success");
+        Swal.fire({
+       icon: "success",          // success, error, warning, info
+       title: "Login Successfully",
+         text: "Welcome!",
+           theme: 'light'
+        });
+
        setTimeout(()=>{
         window.location.href = "user.html";
         }, 1500)
     })
   .catch((error)=>{
-  swal("Login Failed", error.message, "error");
+  Swal.fire({
+  icon: "error",
+  title: "Login Failed",
+    theme: 'light',
+  text: error.message
+});
+
 })
 
   })
@@ -48,25 +61,42 @@
 
     signInWithEmailAndPassword(auth , email ,password)
     .then(()=>{
-
-       swal("Login Successfully","welcome","success");
+     Swal.fire({
+       icon: "success",          // success, error, warning, info
+       title: "Login Successfully",
+         text: "Welcome!",
+           theme: 'light'
+        });
        setTimeout(()=>{
         window.location.href = "user.html";
         }, 1500);
        
     })
     .catch((error)=>{
-  window.swal("Login Failed", error.message, "error");
+  window.Swal.fire({
+  icon: "error",
+  title: "Login Failed",
+    theme: 'light',
+  text: error.message
+});
+
 })
 
   })
+  
 
   // logout
   document.getElementById('logout')?.addEventListener('click',()=>{
     signOut(auth)
     .then(()=>{
 
-        swal('Logout Successfully','Welcome','success')
+     Swal.fire({
+       icon: "success",          // success, error, warning, info
+       title: "Logout Successfully",
+         text: "Welcome!",
+           theme: 'light'
+    
+        });
        setTimeout(()=>{
         window.location.href = "index.html";
         }, 1200);
@@ -79,22 +109,96 @@
 document.getElementById('google-btn')?.addEventListener('click', ()=>{
   signInWithPopup(auth, provider)
   .then(()=>{
-    swal('Login Successfully','welcome','success')
+     Swal.fire({
+       icon: "success",          // success, error, warning, info
+       title: "Login Successfully",
+         text: "Welcome!",
+           theme: 'light'
+        });
     setTimeout(()=>{
         window.location.href = "user.html";
         }, 1500);
   })
   .catch((error)=>{
-  window.swal("Login Failed", error.message, "error");
+  window.Swal.fire({
+  icon: "error",
+  title: "Login Failed",
+   theme: 'light',
+  text: error.message
+});
+
 })
 
 })
+
+
+//Reset code
+
+document.getElementById("reset-password-link")
+  ?.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    Swal.fire({
+      title: "Reset Password",
+      text: "Please enter your email address:",
+      input: "email",
+      inputPlaceholder: "you@example.com",
+      showCancelButton: true,
+      confirmButtonText: "Send Reset Link",
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const email = result.value;
+
+        sendPasswordResetEmail(auth, email)
+          .then(() => {
+            Swal.fire({
+              icon: "success",
+              title: "Email Sent!",
+              text: "Check your inbox for password reset instructions.",
+                theme: 'light'
+            });
+          })
+          .catch((error) => {
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+                theme: 'light',
+              text: error.message,
+            });
+          });
+
+      } else if (!result.value) {
+        Swal.fire({
+          icon: "warning",
+          title: "No Email Entered",
+          text: "Please enter a valid email address.",
+            theme: 'light'
+        });
+      }
+    });
+  });
+
+  onAuthStateChanged(auth, (user) => {
+  if (user && window.location.pathname.includes("user.html")) {
+    document.getElementById("user-email").textContent = user.email;
+  } else if (!user && window.location.pathname.includes("user.html")) {
+    window.location.href = "index.html";
+  }
+});
+
+
 
 document.getElementById('user-btn')?.addEventListener('click', () => {
   const username = document.getElementById('username').value.trim();
 
 if (username === "") {
-    window.swal("Missing Field", "Please enter a username", "warning");
+    window.Swal.fire({
+  icon: "warning",
+  title: "Missing Field",
+  text: "Please enter a username",
+  them :"light"
+});
+
     return;
 }
 
@@ -123,13 +227,29 @@ window.sendMessage =  function () {
     return;
   }
 
-  push(ref(db, "messages"), {
-    name: username,
-    text: message
-  });
+// 📌 Simple Time Setup
+const now = new Date();
+const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+push(ref(db, "messages"), {
+  name: username,
+  text: message,
+  time: time // ✅ Save Time
+});
+
 
   document.getElementById('message').value = "";
-};
+  
+}; 
+
+
+// ✅ Enter Key to Send Message
+document.getElementById("message")?.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault(); // Stop new line
+    sendMessage();      // Call your send function
+  }
+});
 
 
 function createMessageElement(id, data) {
@@ -148,6 +268,13 @@ function createMessageElement(id, data) {
   textP.className = "message-text";
   textP.textContent = `${data.text}`;
   wrapper.appendChild(textP);
+
+  // 🕒 Time Label
+const timeLabel = document.createElement("span");
+timeLabel.className = "message-time";
+timeLabel.textContent = data.time || ""; 
+wrapper.appendChild(timeLabel);
+
 
   // USERNAME small label
   const userLabel = document.createElement("span");
@@ -171,9 +298,21 @@ wrapper.insertBefore(userLabel, textP); // ✅ Username uper
     const delBtn = document.createElement("button");
     delBtn.innerHTML = "  🗑️";
     delBtn.className = "delete-btn";
-    delBtn.onclick = () => {
-      if (confirm("Delete this message?")) deleteMsg(id);
-    };
+  delBtn.onclick = () => {
+  Swal.fire({
+    title: "Are you sure?",
+    text: "This message will be permanently deleted!",
+    icon: "warning",
+    showCancelButton: true,         // shows Cancel button
+    confirmButtonText: "Delete",    // text for confirm
+    cancelButtonText: "Cancel",     // text for cancel
+    reverseButtons: true            // optional, swaps buttons order
+  }).then((result) => {
+    if (result.isConfirmed) {       // only proceed if Delete clicked
+      deleteMsg(id);
+    }
+  });
+};
 
     actionRow.appendChild(editBtn);
     actionRow.appendChild(delBtn);
@@ -202,7 +341,7 @@ onChildChanged(ref(db, "messages"), function(snapshot) {
   const existing = msgBox.querySelector(`.message-item[data-id="${id}"]`);
   if (existing) {
     const textP = existing.querySelector('.message-text');
-    textP.textContent = `${data.name}`;
+    textP.textContent = `${data.text}`;
   }
 });
 
@@ -215,65 +354,51 @@ onChildRemoved(ref(db, "messages"), function(snapshot) {
 });
 
 function deleteMsg(id) {
-  window.swal({
-    title: "Are you sure?",
-    text: "This message will be permanently deleted!",
-    icon: "warning",
-    buttons: true,
-    dangerMode: true,
-  })
-  .then((willDelete) => {
-    if (willDelete) {
-      remove(ref(db, "messages/" + id))
-        .then(() => {
-          window.swal("Deleted!", "Message removed successfully.", "success");
-        })
-        .catch(err => {
-          window.swal("Delete Error", err.message, "error");
-        });
-    }
-  });
+  remove(ref(db, "messages/" + id))
+    .then(() => {
+      window.Swal.fire({ icon: "success", title: "Deleted!", text: "Message removed successfully.", theme: 'light'});
+    })
+    .catch(err => {
+      window.Swal.fire({ icon: "error", title: "Update Error", theme: 'light' , text: err.message });
+    });
 }
 
 
 function editMsg(id, oldText) {
-  swal({
+  Swal.fire({
     title: "Edit Message",
-    text: "Update your message:",
-    content: {
-      element: "input",
-      attributes: {
-        value: oldText,
-      },
-    },
-    buttons: ["Cancel", "Save"],
-  })
-  .then((newText) => {
-    if (newText === null) return; // user clicked Cancel
+    input: "text",
+    inputValue: oldText,
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel",
+  }).then((result) => {
+    if (!result.isConfirmed) return; // user clicked Cancel
 
-    const trimmed = newText.trim();
-    if (trimmed === "") {
-      swal("Empty Message", "Message cannot be empty.", "warning");
+    const newText = result.value?.trim();
+    if (!newText) {
+      Swal.fire({ icon: "warning", title: "Empty Message", text: "Message cannot be empty." });
       return;
     }
 
     // Confirmation before saving
-    swal({
+    Swal.fire({
+      icon: "question",
       title: "Confirm Edit?",
       text: "Do you want to save changes?",
-      icon: "info",
-      buttons: ["No", "Yes"],
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No"
     }).then((confirmEdit) => {
-      if (!confirmEdit) return;
+      if (!confirmEdit.isConfirmed) return;
 
-      update(ref(db, "messages/" + id), { text: trimmed })
+      update(ref(db, "messages/" + id), { text: newText })
         .then(() => {
-          swal("Updated!", "Message updated successfully.", "success");
+          Swal.fire({ icon: "success", title: "Updated!", text: "Message updated successfully." });
         })
         .catch(err => {
-          swal("Update Error", err.message, "error");
+          Swal.fire({ icon: "error", title: "Update Error", text: err.message });
         });
     });
   });
 }
-
