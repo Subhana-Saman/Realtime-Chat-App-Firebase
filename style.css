@@ -9,11 +9,11 @@ body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: radial-gradient(
     circle at 20% 50%,
-    #e69575 0%,
+    #f19570 0%,
     #9360f0 25%,
     #b359ce 50%,
-    #357c5b 75%,
-    #feca57 100%
+    plum 75%,
+    #d69d22 100%
   );
   background-attachment: fixed;
   background-size: 400% 400%;
@@ -287,3 +287,4 @@ button {
 .emoji-item:hover {
   transform: scale(1.3);
 }
+
